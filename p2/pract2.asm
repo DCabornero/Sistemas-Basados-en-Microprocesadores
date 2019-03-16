@@ -1,7 +1,7 @@
 ;**************************************************************************
 ; SBM 2019
 ; PRACTICA 2
-; AUTORES: 
+; AUTORES: David Cabornero Pascual y Sergio Galán Martín
 ;**************************************************************************
 ; DEFINICION DEL SEGMENTO DE DATOS
 DATOS SEGMENT
