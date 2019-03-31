@@ -1,12 +1,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; 			SBM 2016. Practica 3 - Ejemplo					;
-;   Pareja													;
+; 			SBM 2019. pract3a								;
+;   Pareja: David Cabornero y Sergio Galán					;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 DGROUP GROUP _DATA, _BSS				;; Se agrupan segmentos de datos en uno
 
 _DATA SEGMENT WORD PUBLIC 'DATA' 		;; Segmento de datos DATA público
-SUMA DB (?)
-CONTROLDIGIT DB (?)
+
 _DATA ENDS
 
 _BSS SEGMENT WORD PUBLIC 'BSS'			;; Segmento de datos BSS público
@@ -65,28 +64,29 @@ HALLARCONTROL PROC FAR
 HALLARCONTROL ENDP
 
 ;; Convierte el número de caracteres indicado por CX de la cadena indicada por ES:[BX] en número y lo devuelve en DX:AX
-ASCTOINT PROC FAR
+ASCTONUM PROC FAR
 	PUSH BP
 	MOV BP, 10
 	MOV AX, 0
-BUCLE:
+BUCLE1:
 	MUL BP
 	MOV DH, ES:[BX+DI]
 	SUB DH, 30H
 	ADD AL, DH			;Propagamos el acarreo a los registros implicados
 	ADC AH, 0
 	ADC DX, 0
+	MOV DH, 0			;Eliminamos el resto que nos había quedado antes
 	INC DI
 	DEC CX
-	JNZ BUCLE
+	JNZ BUCLE1
 	POP BP
 	RET
 
-ASCTOINT ENDP
+ASCTONUM ENDP
 			
 			
 PUBLIC _computeControlDigit				;; Hacer visible y accesible la función desde C
-_computeControlDigit PROC FAR 			;; En C es int unsigned long int factorial(unsigned int n)
+_computeControlDigit PROC FAR
 	PUSH BP 						;; Salvaguardar BP en la pila para poder modificarle sin modificar su valor
 	
 	MOV BP, SP							;; Igualar BP el contenido de SP
@@ -94,9 +94,8 @@ _computeControlDigit PROC FAR 			;; En C es int unsigned long int factorial(unsi
 	PUSH ES
 	LES BX, [BP + 6]
 
-	CALL SUMATORIO						;; Pondrá en la variable SUMA el valor de sumar todos los digitos siguiendo el algoritmo
-	CALL HALLARCONTROL
-	ADD AX, 30H						;;Conversion a caracter ascii
+	CALL SUMATORIO						;; Pondrá en AX el valor de sumar todos los digitos siguiendo el algoritmo
+	CALL HALLARCONTROL					;; Calculará el digito de control del valor que tenga en AX y lo devolverá en AX
 	
 	POP ES
 	POP BX
@@ -118,19 +117,20 @@ _decodeBarCode PROC FAR
 	LDS SI, [BP+10]
 	MOV CX, 3
 	MOV DI, 0
-	CALL ASCTOINT
+	CALL ASCTONUM
 	MOV DS:[SI], AX
 	LDS SI, [BP+14]
 	MOV CX, 4
-	CALL ASCTOINT
+	CALL ASCTONUM
 	MOV DS:[SI], AX
 	LDS SI, [BP+18]
 	MOV CX, 5
-	CALL ASCTOINT
+	CALL ASCTONUM
 	MOV DS:[SI], AX
 	MOV DS:[SI+2], DX
 	LDS SI, [BP+22]
 	MOV AL, ES:[BX+DI]
+	SUB AL, 30H
 	MOV DS:[SI], AL
 	POP DI
 	POP CX
