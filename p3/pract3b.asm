@@ -19,12 +19,13 @@ ASSUME CS:_TEXT, DS:DGROUP, SS:DGROUP
 NUMTOASC PROC FAR	;Va extrayendo los caracteres ASCII de un número en DX:AX y los va guardando en ES:[SI+BX]
 	PUSH BP
 	MOV BP, 10
+	ADD BX, CX
 BUCLE:
 	DIV BP
 	ADD DL, 30H
 	MOV ES:[SI+BX], DL
 	MOV DX, 0
-	INC BX
+	DEC BX
 	DEC CX
 	JNZ BUCLE
 	POP BP
@@ -41,64 +42,39 @@ _createBarCode PROC FAR
 	PUSH SI
 	PUSH DI
 	PUSH DX
-	PUSH BX
 	PUSH AX
-	LES SI, [BP+22]
-	LDS DI, [BP+6]
-	;MOV AL, DS:[DI]
-	;ADD AL, 30H
-	;MOV BX, 13
-	MOV BX, 0
-	;MOV BYTE PTR ES:[SI+BX], 0	;Escribimos el fin de string
-	;DEC BX
-	;MOV ES:[SI+BX], AL  ;Escribimos el dígito de control
-	
+	LES SI, [BP+16]
+	MOV BX, -1 ; Check this
 	MOV CX, 3
-	MOV AX, DS:[DI]
+	MOV AX, [BP+6]
 	MOV DX, 0
 	CALL NUMTOASC
-	LDS DI, [BP+10]
+	ADD BX, 3
 	MOV CX, 4
-	MOV AX, DS:[DI]
+	MOV AX, [BP+8]
 	MOV DX, 0
 	CALL NUMTOASC
-	LDS DI, [BP+14]
+	ADD BX, 4
 	MOV CX, 5
-	MOV AX, DS:[DI]
-	MOV DX, DS:[DI+2]
+	MOV AX, [BP+10]
+	MOV DX, [BP+12]
 	CALL NUMTOASC
-	LDS DI, [BP+18]
-	MOV AL, DS:[DI]
+	ADD BX, 5
+	MOV AL, [BP+14]
 	ADD AL, 30H
+	INC BX
 	MOV ES:[SI+BX], AL
 	INC BX
 	MOV BYTE PTR ES:[SI+BX], 0
-	
-	
-	;LDS DI, [BP+14]		;Apuntamos en DS al Product Code
-	;MOV CX, 5			;Longitud Product Code
-	;MOV AX, DS:[DI]
-	;MOV DX, DS:[DI+2]	;Ponemos en DX:AX el valor del Product Code
-	;CALL NUMTOASC
-	;LDS DI, [BP+18] 	;Apuntamos en DS al Company Code
-	;MOV CX, 4			;Longitud Company Code
-	;MOV AX, DS:[DI]
-	;MOV DX, 0			;Ponemos en DX:AX el valor del Company Code
-	;CALL NUMTOASC
-	;LDS DI, [BP+22]		;Apuntamos en DS al Country Code
-	;MOV CX, 3			;Longitud Country Code
-	;MOV AX, DS:[DI]
-	;MOV DX, 0			;Ponemos en DX:AX el valor del Country Code
-	;CALL NUMTOASC
-	;POP AX
-	;POP BX
-	;POP DX
-	;POP DI
-	;POP SI
-	;POP DS
-	;POP ES
-	;POP BP
-	;RET	
+	POP AX
+	POP DX
+	POP DI
+	POP SI
+	POP BX
+	POP DS
+	POP ES
+	POP BP
+	RET	
 _createBarCode ENDP
 _TEXT ENDS
 END
