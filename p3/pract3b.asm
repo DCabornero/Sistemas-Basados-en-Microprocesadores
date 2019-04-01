@@ -1,6 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; 			SBM 2019. practb								;
 ;   Pareja: David Cabornero y Sergio Galán					;
+;	Grupo: 2301												;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 DGROUP GROUP _DATA, _BSS				;; Se agrupan segmentos de datos en uno
 
@@ -15,23 +16,34 @@ _BSS ENDS
 _TEXT SEGMENT BYTE PUBLIC 'CODE' 		;; Definición del segmento de código
 ASSUME CS:_TEXT, DS:DGROUP, SS:DGROUP
 			
-			
-NUMTOASC PROC FAR	;Va extrayendo los caracteres ASCII de un número en DX:AX y los va guardando en ES:[SI+BX]
-	PUSH BP
-	MOV BP, 10
-	ADD BX, CX
+;; MACROS
+ASC EQU 30H
+COUCLEN EQU 3
+COMPCLEN EQU 4
+PCLEN EQU 5
+
+;; NUMTOASC
+;; input: DX:AX número a transformar en ascii, ES:[SI] puntero al inicio del campo a rellenar, CX número de dígitos del campo
+;; output: ninguno, se va guardando en la memoria directamente
+NUMTOASC PROC FAR
+	PUSH BP					;; Guardamos registros implicados	
+	MOV BP, 10				;; Usamos BP como reg aux para dividir por 10
+	ADD BX, CX				;; Para escribir el campo al revés, añadimos al offset la longitud del campo
 BUCLE:
-	DIV BP
-	ADD DL, 30H
-	MOV ES:[SI+BX], DL
-	MOV DX, 0
+	DIV BP					;; El resto se nos guarda en DL
+	ADD DL, ASC				;; Convertimos el resto a ascii
+	MOV ES:[SI+BX], DL		;; Guardamos el dígito en su posición de memoria
+	MOV DX, 0				;; Preparamos DX para la siguiente iteración
 	DEC BX
-	DEC CX
+	DEC CX					;; Actualizamos contador y offset
 	JNZ BUCLE
-	POP BP
+	POP BP					;; Recuperamos los registros
 	RET	
 NUMTOASC ENDP
 
+;; _createBarCode
+;; input: CountryC(uint), CompanyC(uint), PC(long int), CD(uchar), puntero a donde escribir el código 
+;; output: ninguno
 PUBLIC _createBarCode
 _createBarCode PROC FAR
 	PUSH BP
@@ -42,30 +54,30 @@ _createBarCode PROC FAR
 	PUSH SI
 	PUSH DI
 	PUSH DX
-	PUSH AX
-	LES SI, [BP+16]
-	MOV BX, -1 ; Check this
-	MOV CX, 3
-	MOV AX, [BP+6]
-	MOV DX, 0
-	CALL NUMTOASC
-	ADD BX, 3
-	MOV CX, 4
+	PUSH AX							;; Guardamos los registros implicados
+	LES SI, [BP+16]					;; Apuntamos en ES:[SI] a la memoria donde escribiremos el código
+	MOV BX, -1 						;; Lo inicializamos a -1 para poder escribir los campos correctamente en la función NUMTOASC
+	MOV CX, COUCLEN					;; Ponemos en CX el número de dígitos de CountryC
+	MOV AX, [BP+6]					
+	MOV DX, 0						;; Ponemos en DX:AX el valor númerico del CountryC
+	CALL NUMTOASC					;; La función se encarga de transformar el número a ascii y guardarlo
+	ADD BX, COUCLEN					;; Actualizamos el puntero
+	MOV CX, COMPCLEN				;; Ponemos en CX el número de dígitos del CompanyC
 	MOV AX, [BP+8]
-	MOV DX, 0
-	CALL NUMTOASC
-	ADD BX, 4
-	MOV CX, 5
+	MOV DX, 0						;; Ponemos en DX:AX el valor númerico del CompanyC
+	CALL NUMTOASC					;; La función se encarga de transformar el número a ascii y guardarlo
+	ADD BX, COMPCLEN				;; Actualizamos el puntero
+	MOV CX, PCLEN					;; Ponemos en CX el número de dígitos del PC
 	MOV AX, [BP+10]
-	MOV DX, [BP+12]
-	CALL NUMTOASC
-	ADD BX, 5
-	MOV AL, [BP+14]
-	ADD AL, 30H
+	MOV DX, [BP+12]					;; Ponemos en DX:AX el valor numérico del PC
+	CALL NUMTOASC					;; La función se encarga de transformar el número a ascii y guardarlo
+	ADD BX, PCLEN					;; Actualizamos el puntero
+	MOV AL, [BP+14]					;; Guardamos en AL
+	ADD AL, ASC						;; Lo pasamos a ascii
 	INC BX
-	MOV ES:[SI+BX], AL
+	MOV ES:[SI+BX], AL				;; Guardamos el digito de control en su posición
 	INC BX
-	MOV BYTE PTR ES:[SI+BX], 0
+	MOV BYTE PTR ES:[SI+BX], 0		;; Ponemos un /0 al final
 	POP AX
 	POP DX
 	POP DI
@@ -73,7 +85,7 @@ _createBarCode PROC FAR
 	POP BX
 	POP DS
 	POP ES
-	POP BP
+	POP BP							;; Recuperamos los registros
 	RET	
 _createBarCode ENDP
 _TEXT ENDS
