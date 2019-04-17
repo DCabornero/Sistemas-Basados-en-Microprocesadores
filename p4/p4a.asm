@@ -5,7 +5,7 @@ inicio: jmp instalador
 
 ; Variables globales
 
-tabladesc DB '6789AB'
+tabladecod DB '6789AB'
 		  DB 'CDEFGH'
 		  DB 'IJKLMN'
 		  DB 'OPQRST'
@@ -20,7 +20,8 @@ tablacod DB 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		 DB	34H,32H,34H,33H,34H,34H,34H,35H,34H,36H,35H,31H,35H,32H,35H,33H,35H,34H,35H,35H,35H,36H,0,0,0,0,0,0,0,0,0,0
 		 DB	0,0,31H,35H,31H,36H,32H,31H,32H,32H,32H,33H,32H,34H,32H,35H,32H,36H,33H,31H,33H,32H,33H,33H,33H,34H,33H,35H,33H,36H,34H,31H
 		 DB	34H,32H,34H,33H,34H,34H,34H,35H,34H,36H,35H,31H,35H,32H,35H,33H,35H,34H,35H,35H,35H,36H,0,0,0,0,0,0,0,0,0,0
-			
+
+salida DB 100 dup (?)
 
 instruc DB 'Numero grupo: 5, David Cabornero y Sergio Galan.', 0AH
 		DB 'Uso del programa: Sin argumentos imprime estas instrucciones,'
@@ -33,15 +34,62 @@ firma DW 0DCABH
 ; Rutina de servicio a la interrupción
 rsi PROC FAR
 	; Salva registros modificados
-	;push ... 
+	push ax bx cx dx bp
 	; Instrucciones de la rutina ... 
 	cmp ah, 10h
-	;jz cod
+	jz cod
 	cmp ah, 11h
-	;jz decod
+	jz decod
+	jmp fin	; Si no es ninguno de los dos casos no hacemos nada
+	cod:
+	mov bp, dx
+	mov si, 0
+	mov bl, ds:[bp][si]
+	loopcod:
+	mov bh, 0
+	sal bx, 1
+	mov bx, WORD PTR tablacod[bx]
+	mov WORD PTR salida[di], bx
+	inc si
+	add di, 2
+	mov bl, ds:[bp][si]
+	cmp bl, '$'
+	jnz loopcod
+	mov salida[di], '$'
+	jmp print
+	decod:
+	mov bp, dx
+	mov cx, 0
+	mov di, 0
+	mov bh, 0
+	loopdecod:
+	mov bl, ds:[bp][di]+1
+	sub bl, 31h
+	mov si, bx
+	mov bl, ds:[bp][di]
+	sub bl, 31h
+	mov al, 6
+	mul bl
+	mov bx, ax
+	mov bl, tabladecod[bx][si]
+	mov si, cx
+	mov salida[si], bl
+	inc cx
+	add di, 2
+	mov bl, ds:[bp][di]
+	cmp bl, '$'
+	jnz loopdecod
+	mov salida[si]+1, '$'
+	jmp print
+	print:
+	mov dx, OFFSET salida
+	mov ah, 9
+	int 21h
 	
+	
+	fin:
 	; Recupera registros modificados
-	;pop ... 
+	pop bp dx cx bx ax
 	iret
 rsi ENDP
 
@@ -97,12 +145,13 @@ instalador PROC FAR
 	mov ds:[57h*4], cx
 	mov ds:[57h*4+2], cx
 	sti	;TODO
+	jmp fininst
 	
 	nodesinst:
 	mov dx, OFFSET nodes
 	mov ah, 9
 	int 21H
-	jmp fin
+	jmp fininst
 	
 	
 	instrucciones:
@@ -119,12 +168,12 @@ instalador PROC FAR
 	mov dx, OFFSET desinstal
 	mov ah, 9
 	int 21H
-	jmp fin
+	jmp fininst
 	instalado:
 	mov dx, OFFSET instal
 	mov ah, 9
 	int 21H
-	fin:
+	fininst:
 	mov ax, 4c00H
 	int 21H
 instalador ENDP
