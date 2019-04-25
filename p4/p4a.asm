@@ -36,53 +36,53 @@ rsi PROC FAR
 	; Salva registros modificados
 	push ax bx cx dx bp
 	; Instrucciones de la rutina ... 
-	cmp ah, 10h
+	cmp ah, 10h ;Si la interrupcion es 10h, codificamos
 	jz cod
-	cmp ah, 11h
+	cmp ah, 11h ;Si la interrupcion es 11h, decodificamos
 	jz decod
 	jmp fin	; Si no es ninguno de los dos casos no hacemos nada
-	cod:
+	cod: ;Codificamos una String y la imprimimos
 	mov bp, dx
 	mov si, 0
-	mov bl, ds:[bp][si]
+	mov bl, ds:[bp][si]	;Obtenemos el primer digito sin codificar
 	loopcod:
 	mov bh, 0
 	sal bx, 1
-	mov bx, WORD PTR tablacod[bx]
-	mov WORD PTR salida[di], bx
-	inc si
-	add di, 2
-	mov bl, ds:[bp][si]
-	cmp bl, '$'
-	jnz loopcod
-	mov salida[di], '$'
-	jmp print
-	decod:
+	mov bx, WORD PTR tablacod[bx]	;Obtenemos el primer digito codificado
+	mov WORD PTR salida[di], bx		;Guardamos la letra en la cadena codificada
+	inc si							;Avanzamos posicion en la String
+	add di, 2						;Avanzamos posicion en la cadena codificada
+	mov bl, ds:[bp][si]				;Obtenemos el siguiente digito sin codificar
+	cmp bl, '$'						;Comprobamos si hemos acabado
+	jnz loopcod						;Repetimos el proceso si no es asi
+	mov salida[di], '$'				;Finalizamos la cadena codificada
+	jmp print						;Saltamos a la impresion por pantalla
+	decod:	;Decodificamos una String y la imprimimos
 	mov bp, dx
 	mov cx, 0
 	mov di, 0
 	mov bh, 0
 	loopdecod:
-	mov bl, ds:[bp][di]+1
-	sub bl, 31h
-	mov si, bx
-	mov bl, ds:[bp][di]
-	sub bl, 31h
-	mov al, 6
+	mov bl, ds:[bp][di]+1			;Obtenemos la direccion de la letra decodificada
+	sub bl, 31h						
+	mov si, bx						
+	mov bl, ds:[bp][di]				
+	sub bl, 31h						
+	mov al, 6						
 	mul bl
 	mov bx, ax
-	mov bl, tabladecod[bx][si]
+	mov bl, tabladecod[bx][si]		;Obtenemos la letra decodificada en nuestra tabla
 	mov si, cx
-	mov salida[si], bl
-	inc cx
-	add di, 2
-	mov bl, ds:[bp][di]
-	cmp bl, '$'
-	jnz loopdecod
-	mov salida[si]+1, '$'
-	jmp print
-	print:
-	mov dx, OFFSET salida
+	mov salida[si], bl				;Guardamos la letra en nuestra cadena final
+	inc cx					
+	add di, 2			
+	mov bl, ds:[bp][di]				;Obtenemos el siguiente byte
+	cmp bl, '$'						;Comprobamos si hemos finalizado
+	jnz loopdecod					;Repetimos el proceso en caso contrario
+	mov salida[si]+1, '$'			;Finalizamos la cadena de salida en caso de finalizar
+	;jmp print
+	print:						;Impresion por pantalla
+	mov dx, OFFSET salida		
 	mov ah, 9
 	int 21h
 	
@@ -97,25 +97,25 @@ instalador PROC FAR
 	xor dh, dh
 	mov dl, cs:[80H] ; Número de argumentos
 	cmp dl, 0
-	jz instrucciones
+	jz instrucciones ; Si no hay argumentos, mostramos unas instrucciones, pues no es una opcion valida
 	cmp dl, 3
-	jz instdes
+	jz instdes	;Si hay tres letras, PUEDE que haya puesto correctamente las letras
 	jmp instrucciones	;Si nos pasan algo no contemplado, imprimimos instrucciones
-	instdes:
+	instdes:		;Comprobamos si las tres letras son validas
 	mov dl, cs:[80H+3]
-	cmp dl, 'D'
+	cmp dl, 'D'		;Si la tercera letra es D, desinstalamos
 	jz desinst
-	cmp dl, 'I'
+	cmp dl, 'I'		;Si la tercera letra es I, instalamos
 	jnz instrucciones
 	;inst:
-	mov ax, 0
+	mov ax, 0		
 	mov es, ax
-	mov ax, OFFSET rsi
+	mov ax, OFFSET rsi	;ax tiene el OFFSET del codigo Polibio
 	mov bx, cs
-	cli	;TODO
-	mov es:[57h*4], ax
+	cli					;Se inhabilitan interrupciones
+	mov es:[57h*4], ax		;Implementamos una rutina de servicio a la interrupcion 57h
 	mov es:[57h*4+2], bx
-	sti	;TODO
+	sti					;Las interrupciones vuelven a estar habilitadas
 	mov dx, OFFSET instalador
 	int 27h ; Acaba y deja residente 
 			; PSP, variables y rutina rsi.
@@ -154,26 +154,26 @@ instalador PROC FAR
 	jmp fininst
 	
 	
-	instrucciones:
+	instrucciones:		;Imprimimos instrucciones si nos han dado algo no valido
 	mov ah, 9
-	mov dx, OFFSET instruc
+	mov dx, OFFSET instruc	
 	int 21H
-	mov ax, 0
+	mov ax, 0			;Iniciamos comprobacion de firma
 	mov es, ax
 	mov ax, 0DCABH
 	mov si, es:[57h*4]
 	mov es, es:[57h*4+2]
 	cmp ax, es:[si-2]
-	jz instalado			;; Solo comprueba la firma
-	mov dx, OFFSET desinstal
+	jz instalado			;El programa esta firmado, por lo que asumimos que esta instalado nuestro programa
+	mov dx, OFFSET desinstal	;En caso contrario, notificamos que no esta instalado
 	mov ah, 9
 	int 21H
 	jmp fininst
-	instalado:
+	instalado:	;Notificamos que esta instalado
 	mov dx, OFFSET instal
 	mov ah, 9
 	int 21H
-	fininst:
+	fininst:	;Fin del codigo
 	mov ax, 4c00H
 	int 21H
 instalador ENDP
