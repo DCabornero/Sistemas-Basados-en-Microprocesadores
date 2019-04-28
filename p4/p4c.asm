@@ -37,6 +37,8 @@ mov dx, OFFSET TOCOD
 mov ah, 10H
 int 57H
 mov dx, OFFSET TODECOD
+mov ah, 9
+int 21h
 mov ah, 11h
 int 57h
 mov ax, 4c00h

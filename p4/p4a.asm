@@ -33,11 +33,12 @@ nodes DB 'El driver no esta instalado o no es este driver.$'
 contador DW 0
 index DW 0
 finished DB 0
+EMPTY DB '$'
 firma DW 0DCABH
 ; Rutina de servicio a la interrupción
 rsi PROC FAR
 	; Salva registros modificados
-	push ax bx cx dx bp ds di
+	push ax bx cx dx bp ds di si
 	; Instrucciones de la rutina ...
 	cmp ah, 10h ;Si la interrupcion es 10h, codificamos
 	jz cod
@@ -48,6 +49,7 @@ rsi PROC FAR
 	mov bp, dx
 	mov si, 0
 	mov di, 0
+	mov bl, ds:[bp][si]	;Obtenemos el primer digito sin codificar
 	mov bl, ds:[bp][si]	;Obtenemos el primer digito sin codificar
 	loopcod:
 	mov bh, 0
@@ -91,19 +93,26 @@ rsi PROC FAR
 	;mov dx, OFFSET salida		
 	;mov ah, 9
 	;int 21h
-	mov finished, 1
+	mov finished,1
 	check:
-	cmp finished,0
-	jnz check
 	
+	MOV AX, CS
+    MOV DS, AX
+    MOV DX, OFFSET EMPTY
+    MOV AH, 9
+    INT 21H
+	cmp finished,0
+	jnz check	
 	fin:
 	; Recupera registros modificados
-	pop di ds bp dx cx bx ax
+	pop si di ds bp dx cx bx ax
 	iret
 rsi ENDP
 
 rsi2 PROC FAR
-	push bx dx ax
+	push bx dx ax ds
+	mov ax, cs
+	mov ds, ax
 	inc contador
 	cmp contador, 18
 	jnz retorno
@@ -121,8 +130,10 @@ rsi2 PROC FAR
 	jmp retorno
 	terminate:
 	mov finished, 0
+	mov index, 0
+	mov contador, 0
 	retorno:
-	pop ax dx bx
+	pop ds ax dx bx
 	iret
 
 rsi2 ENDP
@@ -158,7 +169,7 @@ instalador PROC FAR
 	mov ax, OFFSET rsi2	;ax tiene el OFFSET del codigo Polibio
 	mov bx, cs
 	cli					;Se inhabilitan interrupciones
-	mov es:[1Ch*4], ax		;Implementamos una rutina de servicio a la interrupcion 57h
+	mov es:[1Ch*4], ax		;Implementamos una rutina de servicio a la interrupcion 1Ch
 	mov es:[1Ch*4+2], bx
 	sti					;Las interrupciones vuelven a estar habilitadas
 	mov dx, OFFSET instalador
