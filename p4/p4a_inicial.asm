@@ -30,9 +30,6 @@ instruc DB 'Numero grupo: 5, David Cabornero y Sergio Galan.', 0AH
 instal DB 'Instalado.$'
 desinstal DB 'Desinstalado.$'
 nodes DB 'El driver no esta instalado o no es este driver.$'
-contador DW 0
-index DW 0
-finished DB 0
 firma DW 0DCABH
 ; Rutina de servicio a la interrupción
 rsi PROC FAR
@@ -86,15 +83,12 @@ rsi PROC FAR
 	mov salida[si]+1, '$'			;Finalizamos la cadena de salida en caso de finalizar
 	;jmp print
 	print:						;Impresion por pantalla
-	;mov ax, cs
-	;mov ds, ax
-	;mov dx, OFFSET salida		
-	;mov ah, 9
-	;int 21h
-	mov finished, 1
-	check:
-	cmp finished,0
-	jnz check
+	mov ax, cs
+	mov ds, ax
+	mov dx, OFFSET salida		
+	mov ah, 9
+	int 21h
+	
 	
 	fin:
 	; Recupera registros modificados
@@ -102,39 +96,13 @@ rsi PROC FAR
 	iret
 rsi ENDP
 
-rsi2 PROC FAR
-	push bx dx ax
-	inc contador
-	cmp contador, 18
-	jnz retorno
-	cmp finished, 1
-	jnz reset
-	mov bx, index
-	cmp salida[bx], '$'
-	jz terminate
-	mov dl, salida[bx]
-	mov ah, 2
-	int 21h
-	inc index
-	reset:
-	mov contador, 0
-	jmp retorno
-	terminate:
-	mov finished, 0
-	retorno:
-	pop ax dx bx
-	iret
-
-rsi2 ENDP
-
 instalador PROC FAR
 	xor dh, dh
 	mov dl, cs:[80H] ; Número de argumentos
 	cmp dl, 0
-	jz aux ; Si no hay argumentos, mostramos unas instrucciones, pues no es una opcion valida
+	jz instrucciones ; Si no hay argumentos, mostramos unas instrucciones, pues no es una opcion valida
 	cmp dl, 3
 	jz instdes	;Si hay tres letras, PUEDE que haya puesto correctamente las letras
-	aux:
 	jmp instrucciones	;Si nos pasan algo no contemplado, imprimimos instrucciones
 	instdes:		;Comprobamos si las tres letras son validas
 	mov dl, cs:[80H+3]
@@ -150,16 +118,6 @@ instalador PROC FAR
 	cli					;Se inhabilitan interrupciones
 	mov es:[57h*4], ax		;Implementamos una rutina de servicio a la interrupcion 57h
 	mov es:[57h*4+2], bx
-	sti					;Las interrupciones vuelven a estar habilitadas
-	;mov dx, OFFSET instalador
-	
-	mov ax, 0		
-	mov es, ax
-	mov ax, OFFSET rsi2	;ax tiene el OFFSET del codigo Polibio
-	mov bx, cs
-	cli					;Se inhabilitan interrupciones
-	mov es:[1Ch*4], ax		;Implementamos una rutina de servicio a la interrupcion 57h
-	mov es:[1Ch*4+2], bx
 	sti					;Las interrupciones vuelven a estar habilitadas
 	mov dx, OFFSET instalador
 	int 27h ; Acaba y deja residente 

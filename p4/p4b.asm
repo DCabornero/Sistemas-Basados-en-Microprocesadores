@@ -27,6 +27,12 @@ ASSUME CS: CODE, DS: DATOS, ES: EXTRA, SS: PILA
 ; COMIENZO DEL PROCEDIMIENTO PRINCIPAL
 
 INICIO PROC
+mov ax, DATOS
+mov ds, ax
+mov ax, PILA
+mov ss, ax
+mov ax, EXTRA
+mov es, ax
 mov dx, OFFSET TOCOD
 mov ah, 10H
 int 57H
