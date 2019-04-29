@@ -6,8 +6,22 @@
 ; DEFINICION DEL SEGMENTO DE DATOS
 DATOS SEGMENT
 ;CADENAS INICIALES
+	FRASE1 DB 'El mensaje a cifrar es: $'
+	FRASE2 DB 10, 'El mensaje a descifrar es: $'
+	FRASE3 DB 10, 'El mensaje cifrado es: $'
+	FRASE4 DB 10, 'El mensaje descifrado es: $'
 	TOCOD DB 'PRUEBA02498$'
 	TODECOD DB '4244512316156163651413$'
+	INTRO DB 'La matriz Polibio utilizada es:', 10, '$'
+	INTERLINEADO DB '-*---*---*---*---*---*---*', 10, '$'
+	FILA1 DB ' | 1 | 2 | 3 | 4 | 5 | 6 |', 10, '$'
+	FILA2 DB '1| 6 | 7 | 8 | 9 | A | B |', 10, '$'
+	FILA3 DB '2| C | D | E | F | G | H |', 10, '$'
+	FILA4 DB '3| I | J | K | L | M | N |', 10, '$'
+	FILA5 DB '4| O | P | Q | R | S | T |', 10, '$'
+	FILA6 DB '5| U | V | W | X | Y | Z |', 10, '$'
+	FILA7 DB '6| 0 | 1 | 2 | 3 | 4 | 5 |', 10, '$'
+	
 	DATOS ENDS
 	
 
@@ -33,9 +47,55 @@ mov ax, PILA
 mov ss, ax
 mov ax, EXTRA
 mov es, ax
+mov ah, 9
+mov dx, OFFSET INTRO
+int 21h
+mov dx, OFFSET INTERLINEADO
+int 21h
+mov dx, OFFSET FILA1
+int 21h
+mov dx, OFFSET INTERLINEADO
+int 21h
+mov dx, OFFSET FILA2
+int 21h
+mov dx, OFFSET INTERLINEADO
+int 21h
+mov dx, OFFSET FILA3
+int 21h
+mov dx, OFFSET INTERLINEADO
+int 21h
+mov dx, OFFSET FILA4
+int 21h
+mov dx, OFFSET INTERLINEADO
+int 21h
+mov dx, OFFSET FILA5
+int 21h
+mov dx, OFFSET INTERLINEADO
+int 21h
+mov dx, OFFSET FILA6
+int 21h
+mov dx, OFFSET INTERLINEADO
+int 21h
+mov dx, OFFSET FILA7
+int 21h
+mov dx, OFFSET INTERLINEADO
+int 21h
+mov dx, OFFSET FRASE1
+int 21h
+mov dx, OFFSET TOCOD
+int 21h
+mov dx, OFFSET FRASE3
+int 21h
 mov dx, OFFSET TOCOD
 mov ah, 10H
 int 57H
+mov dx, OFFSET FRASE2
+mov ah, 9
+int 21h
+mov dx, OFFSET TODECOD
+int 21h
+mov dx, OFFSET FRASE4
+int 21h
 mov dx, OFFSET TODECOD
 mov ah, 11h
 int 57h

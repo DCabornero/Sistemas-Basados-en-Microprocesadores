@@ -33,7 +33,7 @@ nodes DB 'El driver no esta instalado o no es este driver.$'
 contador DW 0
 index DW 0
 finished DB 0
-EMPTY DB '$'
+empty DB '$'
 firma DW 0DCABH
 ; Rutina de servicio a la interrupción
 rsi PROC FAR
@@ -95,12 +95,11 @@ rsi PROC FAR
 	;int 21h
 	mov finished,1
 	check:
-	
-	MOV AX, CS
-    MOV DS, AX
-    MOV DX, OFFSET EMPTY
-    MOV AH, 9
-    INT 21H
+	mov ax, cs		;Bucle para evitar optimización del compilador, no imprime nada
+    mov ds, ax
+    mov dx, OFFSET empty
+    mov ah, 9
+    int 21H
 	cmp finished,0
 	jnz check	
 	fin:
@@ -152,26 +151,43 @@ instalador PROC FAR
 	cmp dl, 'D'		;Si la tercera letra es D, desinstalamos
 	jz desinst
 	cmp dl, 'I'		;Si la tercera letra es I, instalamos
-	jnz instrucciones
+	jnz aux
 	;inst:
-	mov ax, 0		
-	mov es, ax
-	mov ax, OFFSET rsi	;ax tiene el OFFSET del codigo Polibio
+	mov cx, 0		
+	mov es, cx
+	mov cx, OFFSET rsi	;ax tiene el OFFSET del codigo Polibio
 	mov bx, cs
-	cli					;Se inhabilitan interrupciones
-	mov es:[57h*4], ax		;Implementamos una rutina de servicio a la interrupcion 57h
+	;cli					;Se inhabilitan interrupciones
+	in ax, 21h
+	or ax, 1
+	out 21h, ax
+	
+	mov es:[57h*4], cx		;Implementamos una rutina de servicio a la interrupcion 57h
 	mov es:[57h*4+2], bx
-	sti					;Las interrupciones vuelven a estar habilitadas
+	
+	in ax, 21h
+	and ax, 1111111111111110b
+	out 21h, ax
+	;sti					;Las interrupciones vuelven a estar habilitadas
 	;mov dx, OFFSET instalador
 	
-	mov ax, 0		
-	mov es, ax
-	mov ax, OFFSET rsi2	;ax tiene el OFFSET del codigo Polibio
+	mov cx, 0		
+	mov es, cx
+	mov cx, OFFSET rsi2	;ax tiene el OFFSET del codigo Polibio
 	mov bx, cs
-	cli					;Se inhabilitan interrupciones
-	mov es:[1Ch*4], ax		;Implementamos una rutina de servicio a la interrupcion 1Ch
+	;cli					;Se inhabilitan interrupciones
+	
+	in ax, 21h
+	or ax, 1
+	out 21h, ax
+	
+	mov es:[1Ch*4], cx		;Implementamos una rutina de servicio a la interrupcion 1Ch
 	mov es:[1Ch*4+2], bx
-	sti					;Las interrupciones vuelven a estar habilitadas
+	
+	in ax, 21h
+	and ax, 1111111111111110b
+	out 21h, ax
+	;sti					;Las interrupciones vuelven a estar habilitadas
 	mov dx, OFFSET instalador
 	int 27h ; Acaba y deja residente 
 			; PSP, variables y rutina rsi.
@@ -187,7 +203,7 @@ instalador PROC FAR
 	mov es, es:[57h*4+2]
 	cmp ax, es:[si-2]
 	jnz nodesinst
-	mov cx, 0		;Desinstalacion
+	mov cx, 0		;Desinstalacion primer driver
 	mov ds, cx
 	mov es, ds:[57h*4+2]
 	mov bx, es:[2Ch]
@@ -201,6 +217,23 @@ instalador PROC FAR
 	mov ds:[57h*4], cx
 	mov ds:[57h*4+2], cx
 	sti	;TODO
+	
+	;mov cx, 0
+	;mov ds, cx
+	;mov es, ds:[1Ch*4+2]	;Desisntalacion segundo driver
+	;mov bx, es:[2Ch]
+	
+	;mov ah, 49h
+	;int 21h
+	;mov es, bx
+	;int 21h
+	
+	;cli ;TODO
+	;mov ds:[1Ch*4], cx
+	;mov ds:[1Ch*4+2], cx
+	;sti	;TODO
+	
+	
 	jmp fininst
 	
 	nodesinst:
