@@ -69,12 +69,12 @@ rsi PROC FAR
 	mov di, 0
 	mov bh, 0
 	loopdecod:
-	mov bl, ds:[bp][di]+1			;Obtenemos la direccion de la letra decodificada
-	sub bl, 31h						
+	mov bl, ds:[bp][di]+1			;Obtenemos la direccion de la letra decodificada con mayor peso
+	sub bl, 31h						;Cambiamos la letra de formato ASCII al digito en si
 	mov si, bx						
-	mov bl, ds:[bp][di]				
-	sub bl, 31h						
-	mov al, 6						
+	mov bl, ds:[bp][di]				;Obtenemos la direccion de la letra decodificada con menor peso
+	sub bl, 31h						;Cambiamos la letra de formato ASCII al digito en si
+	mov al, 6						;Obtenemos la posicion de la tabla que corresponde a la decodificacion
 	mul bl
 	mov bx, ax
 	mov bl, tabladecod[bx][si]		;Obtenemos la letra decodificada en nuestra tabla
@@ -86,21 +86,20 @@ rsi PROC FAR
 	cmp bl, '$'						;Comprobamos si hemos finalizado
 	jnz loopdecod					;Repetimos el proceso en caso contrario
 	mov salida[si]+1, '$'			;Finalizamos la cadena de salida en caso de finalizar
-	;jmp print
-	print:						;Impresion por pantalla
+	print:							;Impresion por pantalla
 	;mov ax, cs
 	;mov ds, ax
 	;mov dx, OFFSET salida		
 	;mov ah, 9
 	;int 21h
-	mov finished,1
-	check:
-	mov ax, cs		;Bucle para evitar optimización del compilador, no imprime nada
-    mov ds, ax
+	mov finished,1					;Cambiamos la flag para indicar que la decodificacion ha acabado
+	check:							;Comprobacion de si se ha cambiado la flag de finalizacion
+	mov ax, cs						;Impresion vacia para evitar optimización del compilador
+    mov ds, ax						
     mov dx, OFFSET empty
     mov ah, 9
     int 21H
-	cmp finished,0
+	cmp finished,0					
 	jnz check	
 	fin:
 	; Recupera registros modificados
@@ -113,25 +112,26 @@ rsi2 PROC FAR
 	mov ax, cs
 	mov ds, ax
 	inc contador
-	cmp contador, 18
+	cmp contador, 18		;Cada 18 iteraciones (1 segundo), se escribe una letra
 	jnz retorno
-	cmp finished, 1
+	cmp finished, 1			;Si se ha acabado, debemos reiniciar el contador
 	jnz reset
-	mov bx, index
-	cmp salida[bx], '$'
+	mov bx, index			
+	cmp salida[bx], '$'		;Comprobamos si hemos llegado al final de nuestra cadena
 	jz terminate
-	mov dl, salida[bx]
+	mov dl, salida[bx]		;Imprimimos la letra que toca
 	mov ah, 2
 	int 21h
-	inc index
-	reset:
-	mov contador, 0
+	inc index				;Incrementamos el contador de letra contada
+	reset:					;Reiniciamos el contador
+	mov contador, 0			
 	jmp retorno
-	terminate:
+	terminate:				;Hemos terminado, ponemos todas las flags y contadores a cero
 	mov finished, 0
 	mov index, 0
 	mov contador, 0
-	retorno:
+	retorno:				
+	; Recupera registros modificados
 	pop ds ax dx bx
 	iret
 
@@ -194,16 +194,16 @@ instalador PROC FAR
 	
 	desinst:
 	;Comprobamos si el driver que está instalado es el nuestro, si es que hay alguno
-	mov ax, 0
-	mov es, ax
-	cmp ax, es:[57h*4]
-	jz nodesinst
-	mov ax, 0DCABH
+	mov ax, 0				
+	mov es, ax				
+	cmp ax, es:[57h*4]	;Comprobamos si hay un driver instalado	
+	jz nodesinst		
+	mov ax, 0DCABH		;Firma de nuestro driver
 	mov si, es:[57h*4]
 	mov es, es:[57h*4+2]
-	cmp ax, es:[si-2]
-	jnz nodesinst
-	mov cx, 0		;Desinstalacion primer driver
+	cmp ax, es:[si-2]	;Comprobamos si la firma de nuestro driver es la que debe ser
+	jnz nodesinst		
+	mov cx, 0				;Desinstalacion primer driver
 	mov ds, cx
 	mov es, ds:[57h*4+2]
 	mov bx, es:[2Ch]

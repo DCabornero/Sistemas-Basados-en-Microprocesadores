@@ -41,14 +41,14 @@ ASSUME CS: CODE, DS: DATOS, ES: EXTRA, SS: PILA
 ; COMIENZO DEL PROCEDIMIENTO PRINCIPAL
 
 INICIO PROC
-mov ax, DATOS
+mov ax, DATOS						;Movemos los segmentos al su sitio
 mov ds, ax
 mov ax, PILA
 mov ss, ax
 mov ax, EXTRA
 mov es, ax
 mov ah, 9
-mov dx, OFFSET INTRO
+mov dx, OFFSET INTRO			;Imprimimos nuestra tabla de Polibio
 int 21h
 mov dx, OFFSET INTERLINEADO
 int 21h
@@ -80,25 +80,25 @@ mov dx, OFFSET FILA7
 int 21h
 mov dx, OFFSET INTERLINEADO
 int 21h
-mov dx, OFFSET FRASE1
+mov dx, OFFSET FRASE1			;Ponemos el mensaje a cifrar
 int 21h
 mov dx, OFFSET TOCOD
 int 21h
-mov dx, OFFSET FRASE3
+mov dx, OFFSET FRASE3			;Ponemos el mensaje cifrado
 int 21h
 mov dx, OFFSET TOCOD
 mov ah, 10H
-int 57H
+int 57H							;Imprimimos el mensaje cifrado con las letras de una en una
 mov dx, OFFSET FRASE2
 mov ah, 9
 int 21h
-mov dx, OFFSET TODECOD
+mov dx, OFFSET TODECOD			;Imprimimos el mensaje decodificado
 int 21h
 mov dx, OFFSET FRASE4
 int 21h
-mov dx, OFFSET TODECOD
+mov dx, OFFSET TODECOD			
 mov ah, 11h
-int 57h
+int 57h							;Imprimimos el mensaje decodificado con las letras de una en una
 mov ax, 4c00h
 int 21h
 INICIO ENDP

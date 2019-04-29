@@ -41,7 +41,7 @@ ASSUME CS: CODE, DS: DATOS, ES: EXTRA, SS: PILA
 ; COMIENZO DEL PROCEDIMIENTO PRINCIPah
 
 INICIO PROC
-mov ax, DATOS
+mov ax, DATOS					;Movemos los segmentos a su sitio correspondiente
 mov ds, ax
 mov ax, PILA
 mov ss, ax
@@ -49,7 +49,7 @@ mov ax, EXTRA
 mov es, ax
 initial:
 mov ah, 9
-mov dx, OFFSET INSTRUCCIONES
+mov dx, OFFSET INSTRUCCIONES	;Imprimimos las instrucciones
 int 21h
 mov dx, OFFSET INSTRUCCIONES2
 int 21h
@@ -61,73 +61,75 @@ mov dx, OFFSET INSTRUCCIONES5
 int 21h
 mov dx, OFFSET INSTRUCCIONES6
 int 21h
-mov dx, OFFSET INPUT
+mov dx, OFFSET INPUT			;Solicitamos un comando
 int 21h
-mov ah,0AH
-mov dx,OFFSET COMANDO
+mov ah,0AH						
+mov dx,OFFSET COMANDO			;Leemos el comando introducido
 mov COMANDO[0],10
 int 21H
-xor ax, ax
-call CHECKCOM
-cmp ax, 1
+xor ax, ax						;Inicializamos ax a 0
+call CHECKCOM					;Checkeamos cual es el comando introducido
+cmp ax, 1						;Saltamos a codificar
 jz cod
-cmp ax, 2
-jz decod
-cmp ax, 3
+cmp ax, 2						;Saltamos a decodificar
+jz decod	
+cmp ax, 3						;No hacemos nada
 jz fin
 mov ah, 9
-mov dx, OFFSET ERRSTRING
+mov dx, OFFSET ERRSTRING		;Error: no se ha hecho nada de lo que deberia haber hecho
 int 21h
-jmp initial
-cod:
+jmp initial						;En tal caso, volvemos al principio
+
+cod:							;Procedemos a la codificacion
 mov ah, 9h
-mov dx, OFFSET INPUTCOD
+mov dx, OFFSET INPUTCOD			;Solicitamos una string
 int 21h
 mov ah, 0AH
-mov dx,OFFSET STRING
+mov dx,OFFSET STRING			;Leemos la string
 mov STRING[0],99
 int 21H
 mov ah, 9
-mov dx, OFFSET INTRO
+mov dx, OFFSET INTRO			;Imprimimos un salto de linea
 int 21H
 mov ah, 10H
 mov dx, OFFSET STRING[2]
-int 57H
+int 57H							;Llamamos al driver para imprimir la string codificada
 mov ah, 9
-mov dx, OFFSET INTRO
+mov dx, OFFSET INTRO			;Imprimimos un salto de linea
 int 21H
-jmp initial
-decod:
+jmp initial						;Volvemos al principio
+
+decod:							;Procedemos a la decodificacion
 mov ah, 9h
-mov dx, OFFSET INPUTDECOD
+mov dx, OFFSET INPUTDECOD		;Solicitamos una string a decodificar
 int 21h
 mov ah, 0AH
-mov dx,OFFSET STRING
+mov dx,OFFSET STRING			;Leemos la string que nos han dado
 mov STRING[0],99
 int 21H
 mov ah, 9
-mov dx, OFFSET INTRO
+mov dx, OFFSET INTRO			;Imprimimos un salto de linea
 int 21H
 mov ah, 11H
 mov dx, OFFSET STRING[2]
-int 57H
+int 57H							;Llamamos al driver para imprimir la string decodificada
 mov ah, 9
-mov dx, OFFSET INTRO
+mov dx, OFFSET INTRO			;Imprimimos un salto de linea
 int 21H
-jmp initial
+jmp initial						;Volvemos al inicio
 fin:
-mov ax, 4c00h
+mov ax, 4c00h					;Fin del programa
 int 21h
 INICIO ENDP
 
-CHECKCOM PROC		;DEVUELVE EN AH 1 SI EL COMANDO ES COD, 2 SI ES DECOD, 3 SI ES QUIT. SI NO, LO DEJA COMO ESTABA (A 0)
+CHECKCOM PROC		;DEVUELVE EN AX 1 SI EL COMANDO ES COD, 2 SI ES DECOD, 3 SI ES QUIT. SI NO, LO DEJA COMO ESTABA (A 0)
 push bx
-mov bx, 2
-buclecod:
-mov ah, COMANDO[bx]
-cmp ah, 0DH
-jz checkcod
-cmp COD[bx-2], ah
+mov bx, 2				;Valor en el que comenzamos a ver el comando
+buclecod:				
+mov ah, COMANDO[bx]		;Valor del comando
+cmp ah, 0DH				
+jz checkcod				;Comprobamos que si se esta solicitando la codificacion
+cmp COD[bx-2], ah		
 jnz initdecod
 inc bx
 jmp buclecod

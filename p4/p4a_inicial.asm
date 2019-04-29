@@ -58,20 +58,20 @@ rsi PROC FAR
 	jnz loopcod						;Repetimos el proceso si no es asi
 	mov salida[di], '$'				;Finalizamos la cadena codificada
 	jmp print						;Saltamos a la impresion por pantalla
-	decod:	;Decodificamos una String y la imprimimos
+	decod:							;Decodificamos una String y la imprimimos
 	mov bp, dx
 	mov cx, 0
 	mov di, 0
 	mov bh, 0
 	loopdecod:
-	mov bl, ds:[bp][di]+1			;Obtenemos la direccion de la letra decodificada
-	sub bl, 31h						
+	mov bl, ds:[bp][di]+1			;Obtenemos la direccion de la letra decodificada de mayor peso
+	sub bl, 31h						;Obtenemos el digito del codigo ASCII
 	mov si, bx						
-	mov bl, ds:[bp][di]				
-	sub bl, 31h						
+	mov bl, ds:[bp][di]				;Obtenemos la direccion de la letra decodificada de menor peso
+	sub bl, 31h						;Obtenemos el digito del codigo ASCII 
 	mov al, 6						
-	mul bl
-	mov bx, ax
+	mul bl							;Obtenemos la posicion de la tabla de decodificacion que necesitamos
+	mov bx, ax						
 	mov bl, tabladecod[bx][si]		;Obtenemos la letra decodificada en nuestra tabla
 	mov si, cx
 	mov salida[si], bl				;Guardamos la letra en nuestra cadena final
@@ -127,16 +127,16 @@ instalador PROC FAR
 	;Comprobamos si el driver que está instalado es el nuestro, si es que hay alguno
 	mov ax, 0
 	mov es, ax
-	cmp ax, es:[57h*4]
-	jz nodesinst
-	mov ax, 0DCABH
+	cmp ax, es:[57h*4]			;Comprobamos que haya un driver instalado
+	jz nodesinst				
+	mov ax, 0DCABH				;Firma de nuestro driver
 	mov si, es:[57h*4]
 	mov es, es:[57h*4+2]
-	cmp ax, es:[si-2]
+	cmp ax, es:[si-2]			;Comprobamos que esta la firma en nuestro driver
 	jnz nodesinst
-	mov cx, 0		;Desinstalacion
+	mov cx, 0					;Desinstalacion
 	mov ds, cx
-	mov es, ds:[57h*4+2]
+	mov es, ds:[57h*4+2]		
 	mov bx, es:[2Ch]
 	
 	mov ah, 49h
@@ -163,7 +163,7 @@ instalador PROC FAR
 	int 21H
 	mov ax, 0			;Iniciamos comprobacion de firma
 	mov es, ax
-	mov ax, 0DCABH
+	mov ax, 0DCABH			
 	mov si, es:[57h*4]
 	mov es, es:[57h*4+2]
 	cmp ax, es:[si-2]
