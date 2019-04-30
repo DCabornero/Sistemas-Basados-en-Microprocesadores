@@ -34,15 +34,25 @@ contador DW 0
 index DW 0
 finished DB 0
 empty DB '$'
+
+;;Macros
 firma DW 0DCABH
+codnum equ 10h
+decodnum equ 10h
+ascii equ 31h
+tabledim equ 6
+endstring equ '$'
+iteraciones equ 18
+args equ 80H
+
 ; Rutina de servicio a la interrupción
 rsi PROC FAR
 	; Salva registros modificados
 	push ax bx cx dx bp ds di si
 	; Instrucciones de la rutina ...
-	cmp ah, 10h ;Si la interrupcion es 10h, codificamos
+	cmp ah, codnum ;Si la interrupcion es 10h, codificamos
 	jz cod
-	cmp ah, 11h ;Si la interrupcion es 11h, decodificamos
+	cmp ah, decodnum ;Si la interrupcion es 11h, decodificamos
 	jz decod
 	jmp fin	; Si no es ninguno de los dos casos no hacemos nada
 	cod: ;Codificamos una String y la imprimimos
@@ -70,11 +80,11 @@ rsi PROC FAR
 	mov bh, 0
 	loopdecod:
 	mov bl, ds:[bp][di]+1			;Obtenemos la direccion de la letra decodificada con mayor peso
-	sub bl, 31h						;Cambiamos la letra de formato ASCII al digito en si
+	sub bl, ascii					;Cambiamos la letra de formato ASCII al digito en si
 	mov si, bx						
 	mov bl, ds:[bp][di]				;Obtenemos la direccion de la letra decodificada con menor peso
-	sub bl, 31h						;Cambiamos la letra de formato ASCII al digito en si
-	mov al, 6						;Obtenemos la posicion de la tabla que corresponde a la decodificacion
+	sub bl, ascii					;Cambiamos la letra de formato ASCII al digito en si
+	mov al, tabledim				;Obtenemos la posicion de la tabla que corresponde a la decodificacion
 	mul bl
 	mov bx, ax
 	mov bl, tabladecod[bx][si]		;Obtenemos la letra decodificada en nuestra tabla
@@ -83,9 +93,9 @@ rsi PROC FAR
 	inc cx					
 	add di, 2			
 	mov bl, ds:[bp][di]				;Obtenemos el siguiente byte
-	cmp bl, '$'						;Comprobamos si hemos finalizado
+	cmp bl, endstring				;Comprobamos si hemos finalizado
 	jnz loopdecod					;Repetimos el proceso en caso contrario
-	mov salida[si]+1, '$'			;Finalizamos la cadena de salida en caso de finalizar
+	mov salida[si]+1, endstring		;Finalizamos la cadena de salida en caso de finalizar
 	print:							;Impresion por pantalla
 	;mov ax, cs
 	;mov ds, ax
@@ -112,12 +122,12 @@ rsi2 PROC FAR
 	mov ax, cs
 	mov ds, ax
 	inc contador
-	cmp contador, 18		;Cada 18 iteraciones (1 segundo), se escribe una letra
+	cmp contador, iteraciones	;Cada 18 iteraciones (1 segundo), se escribe una letra
 	jnz retorno
 	cmp finished, 1			;Si se ha acabado, debemos reiniciar el contador
 	jnz reset
 	mov bx, index			
-	cmp salida[bx], '$'		;Comprobamos si hemos llegado al final de nuestra cadena
+	cmp salida[bx], endstring	;Comprobamos si hemos llegado al final de nuestra cadena
 	jz terminate
 	mov dl, salida[bx]		;Imprimimos la letra que toca
 	mov ah, 2
@@ -139,7 +149,7 @@ rsi2 ENDP
 
 instalador PROC FAR
 	xor dh, dh
-	mov dl, cs:[80H] ; Número de argumentos
+	mov dl, cs:[args] ; Número de argumentos
 	cmp dl, 0
 	jz aux ; Si no hay argumentos, mostramos unas instrucciones, pues no es una opcion valida
 	cmp dl, 3
@@ -147,7 +157,7 @@ instalador PROC FAR
 	aux:
 	jmp instrucciones	;Si nos pasan algo no contemplado, imprimimos instrucciones
 	instdes:		;Comprobamos si las tres letras son validas
-	mov dl, cs:[80H+3]
+	mov dl, cs:[args+3]
 	cmp dl, 'D'		;Si la tercera letra es D, desinstalamos
 	jz desinst
 	cmp dl, 'I'		;Si la tercera letra es I, instalamos
@@ -198,7 +208,7 @@ instalador PROC FAR
 	mov es, ax				
 	cmp ax, es:[57h*4]	;Comprobamos si hay un driver instalado	
 	jz nodesinst		
-	mov ax, 0DCABH		;Firma de nuestro driver
+	mov ax, firma		;Firma de nuestro driver
 	mov si, es:[57h*4]
 	mov es, es:[57h*4+2]
 	cmp ax, es:[si-2]	;Comprobamos si la firma de nuestro driver es la que debe ser
@@ -249,7 +259,7 @@ instalador PROC FAR
 	int 21H
 	mov ax, 0			;Iniciamos comprobacion de firma
 	mov es, ax
-	mov ax, 0DCABH
+	mov ax, firma
 	mov si, es:[57h*4]
 	mov es, es:[57h*4+2]
 	cmp ax, es:[si-2]
