@@ -142,6 +142,102 @@ retorno:
 
 rsi2 ENDP
 
+instalacion PROC FAR
+	push cx es bx ax
+	mov cx, 0		
+	mov es, cx
+	mov cx, OFFSET rsi	;ax tiene el OFFSET del codigo Polibio
+	mov bx, cs
+	;cli					;Se inhabilita la interrupcion temporal
+	in ax, 21h
+	or ax, 1
+	out 21h, ax
+	
+	mov es:[57h*4], cx		;Ajustamos OFF Y SEG de la 57h
+	mov es:[57h*4+2], bx
+	
+	in ax, 21h
+	and ax, 1111111111111110b
+	out 21h, ax
+	;sti					;Rehabilitamos la interrupcion temporal
+	;mov dx, OFFSET instalador
+	mov cx, 0		
+	mov es, cx
+	
+	mov bx, es:[1Ch*4]	;Guardamos OFF Y SEG de la rutina de 1Ch anterior
+	mov cx, es:[1Ch*4+2]
+	mov off1C, bx
+	mov seg1C, cx
+	
+	mov cx, OFFSET rsi2	;ax tiene el OFFSET del codigo Polibio
+	mov bx, cs
+	;cli					
+	;Se inhabilita la interrupcion temporal
+	
+	in ax, 21h
+	or ax, 1
+	out 21h, ax
+	
+	mov es:[1Ch*4], cx		;Ajustamos OFF Y SEG de la 1Ch
+	mov es:[1Ch*4+2], bx
+	
+	in ax, 21h
+	and ax, 1111111111111110b
+	out 21h, ax
+	;sti					;Rehabilitamos la interrupcion temporal
+	mov dx, OFFSET instal
+	mov ah, 9
+	int 21h
+	
+	mov dx, OFFSET instalacion
+	pop ax bx es cx
+	ret
+instalacion ENDP
+
+
+desinstalacion PROC FAR
+	push bp dx cx ds es bx ax
+	mov bp, es:[si-6]
+	mov dx, es:[si-4]		;Obtenemos OFF Y SEG de la rsi original de 1Ch
+	
+	mov cx, 0				;Desinstalacion primer driver
+	mov ds, cx
+	mov es, ds:[57h*4+2]
+	mov bx, es:[2Ch]
+	
+	mov ah, 49h
+	int 21h
+	mov es, bx
+	int 21h
+	
+	cli
+	mov ds:[57h*4], cx
+	mov ds:[57h*4+2], cx
+	sti
+	
+	mov cx, 0
+	mov ds, cx
+	mov es, ds:[1Ch*4+2]	;Desisntalacion segundo driver
+	mov bx, es:[2Ch]
+	
+	mov ah, 49h
+	int 21h
+	mov es, bx
+	int 21h
+	
+	cli	;Recuperamos OFF Y SEG de la rsi original de 1Ch
+	mov ds:[1Ch*4], bp
+	mov ds:[1Ch*4+2], dx
+	sti	
+	
+	mov dx, cs
+	mov ds, dx
+	mov dx, OFFSET desinstal
+	mov ah, 9
+	int 21h
+	pop ax bx es ds cx dx bp
+	ret
+desinstalacion ENDP
 
 instrucciones PROC FAR
 	push ax dx es si
@@ -198,55 +294,9 @@ cont2:
 	jmp fininst
 	;inst:
 cont3:
-	mov cx, 0		
-	mov es, cx
-	mov cx, OFFSET rsi	;ax tiene el OFFSET del codigo Polibio
-	mov bx, cs
-	;cli					;Se inhabilita la interrupcion temporal
-	in ax, 21h
-	or ax, 1
-	out 21h, ax
-	
-	mov es:[57h*4], cx		;Ajustamos OFF Y SEG de la 57h
-	mov es:[57h*4+2], bx
-	
-	in ax, 21h
-	and ax, 1111111111111110b
-	out 21h, ax
-	;sti					;Rehabilitamos la interrupcion temporal
-	;mov dx, OFFSET instalador
-	mov cx, 0		
-	mov es, cx
-	
-	mov bx, es:[1Ch*4]	;Guardamos OFF Y SEG de la rutina de 1Ch anterior
-	mov cx, es:[1Ch*4+2]
-	mov off1C, bx
-	mov seg1C, cx
-	
-	mov cx, OFFSET rsi2	;ax tiene el OFFSET del codigo Polibio
-	mov bx, cs
-	;cli					
-	;Se inhabilita la interrupcion temporal
-	
-	in ax, 21h
-	or ax, 1
-	out 21h, ax
-	
-	mov es:[1Ch*4], cx		;Ajustamos OFF Y SEG de la 1Ch
-	mov es:[1Ch*4+2], bx
-	
-	in ax, 21h
-	and ax, 1111111111111110b
-	out 21h, ax
-	;sti					;Rehabilitamos la interrupcion temporal
-	mov dx, OFFSET instal
-	mov ah, 9
-	int 21h
-	
-	mov dx, OFFSET instalador
+	call instalacion	;Si el comando es /I, instalamos el driver
 	int 27h ; Acaba y deja residente 
 			; PSP, variables y rutina rsi.
-	
 desinst:
 	;Comprobamos si el driver que está instalado es el nuestro, si es que hay alguno
 	mov ax, 0				
@@ -258,44 +308,8 @@ desinst:
 	mov es, es:[57h*4+2]
 	cmp ax, es:[si-2]	;Comprobamos si la firma de nuestro driver es la que debe ser
 	jnz nodesinst	
-	mov bp, es:[si-6]
-	mov dx, es:[si-4]		;Obtenemos OFF Y SEG de la rsi original de 1Ch
 	
-	mov cx, 0				;Desinstalacion primer driver
-	mov ds, cx
-	mov es, ds:[57h*4+2]
-	mov bx, es:[2Ch]
-	
-	mov ah, 49h
-	int 21h
-	mov es, bx
-	int 21h
-	
-	cli
-	mov ds:[57h*4], cx
-	mov ds:[57h*4+2], cx
-	sti
-	
-	mov cx, 0
-	mov ds, cx
-	mov es, ds:[1Ch*4+2]	;Desisntalacion segundo driver
-	mov bx, es:[2Ch]
-	
-	mov ah, 49h
-	int 21h
-	mov es, bx
-	int 21h
-	
-	cli	;Recuperamos OFF Y SEG de la rsi original de 1Ch
-	mov ds:[1Ch*4], bp
-	mov ds:[1Ch*4+2], dx
-	sti	
-	
-	mov dx, cs
-	mov ds, dx
-	mov dx, OFFSET desinstal
-	mov ah, 9
-	int 21h
+	call desinstalacion	;Si nuestro driver esta instalado, lo desinstalamos
 	
 	jmp fininst
 	
