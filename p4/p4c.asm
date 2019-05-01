@@ -40,6 +40,12 @@ CODE SEGMENT
 ASSUME CS: CODE, DS: DATOS, ES: EXTRA, SS: PILA
 ; COMIENZO DEL PROCEDIMIENTO PRINCIPAL
 
+;MACROS
+MAXCOM EQU 10
+MAXSTR EQU 99
+CR EQU 0DH
+WATCH EQU '$'
+
 INICIO PROC
 	mov ax, DATOS					;Movemos los segmentos a su sitio correspondiente
 	mov ds, ax
@@ -63,9 +69,9 @@ initial:
 	int 21h
 	mov dx, OFFSET INPUT			;Solicitamos un comando
 	int 21h
-	mov ah,0AH						
+	mov ah, 10						
 	mov dx,OFFSET COMANDO			;Leemos el comando introducido
-	mov COMANDO[0],10
+	mov COMANDO[0],MAXCOM
 	int 21H
 	xor ax, ax						;Inicializamos ax a 0
 	call CHECKCOM					;Checkeamos cual es el comando introducido
@@ -81,12 +87,12 @@ initial:
 	jmp initial						;En tal caso, volvemos al principio
 	
 cod:							;Procedemos a la codificacion
-	mov ah, 9h
+	mov ah, 9
 	mov dx, OFFSET INPUTCOD			;Solicitamos una string
 	int 21h
-	mov ah, 0AH
+	mov ah, 10
 	mov dx,OFFSET STRING			;Leemos la string
-	mov STRING[0],99
+	mov STRING[0],MAXSTR
 	int 21H
 	mov ah, 9
 	mov dx, OFFSET INTRO			;Imprimimos un salto de linea
@@ -100,12 +106,12 @@ cod:							;Procedemos a la codificacion
 	jmp initial						;Volvemos al principio
 	
 decod:							;Procedemos a la decodificacion
-	mov ah, 9h
+	mov ah, 9
 	mov dx, OFFSET INPUTDECOD		;Solicitamos una string a decodificar
 	int 21h
-	mov ah, 0AH
+	mov ah, 10
 	mov dx,OFFSET STRING			;Leemos la string que nos han dado
-	mov STRING[0],99
+	mov STRING[0],MAXSTR
 	int 21H
 	mov ah, 9
 	mov dx, OFFSET INTRO			;Imprimimos un salto de linea
@@ -128,41 +134,41 @@ CHECKCOM PROC		;DEVUELVE EN AX 1 SI EL COMANDO ES COD, 2 SI ES DECOD, 3 SI ES QU
 							;bx tambien nos sirve para ir recorriendo la string a comparar de memoria con 2 bytes menos
 buclecod:				
 	mov ah, COMANDO[bx]		
-	cmp ah, 0DH				;Si es retorno de carro, ya ha terminado la string introducida
+	cmp ah, CR				;Si es retorno de carro, ya ha terminado la string introducida
 	jz checkcod				;Saltamos a comprobar si la otra string tambien ha terminado
 	cmp COD[bx-2], ah		;Si no, comparemos los caracteres de las dos cadenas
 	jnz initdecod			;Si no son iguales, no es el comando cod
 	inc bx					
 	jmp buclecod			;Si son iguales seguimos comprobando hasta llegar al retorno de carro
 checkcod:
-	cmp COD[bx-2], '$'	
+	cmp COD[bx-2], WATCH	
 	jz rescod				;Si la string con la que comparamos también ha terminado, marcaremos que el comando es cod
 							;Si no, comparamos COMANDO con otro posible comando
 initdecod:
 	mov bx, 2				;Inicializamos el índice
 bucledecod:
 	mov ah, COMANDO[bx]
-	cmp ah, 0DH				
+	cmp ah, CR				
 	jz checkdecod			;Si es retorno de carro, hay que comprobar que la otra string tambien ha acabado
 	cmp DECOD[bx-2], ah		;Si no, comparamos los caracteres de las dos cadenas
 	jnz initquit			;Si no son iguales, no es el comando decod
 	inc bx
 	jmp bucledecod			;Si son iguales seguimos comprobando
 checkdecod:
-	cmp DECOD[bx-2], '$'	
+	cmp DECOD[bx-2], WATCH	
 	jz resdecod				;Si la string con la que comparamos tambien ha terminado, marcaremos que el comando es decod
 initquit:
 	mov bx, 2				;Si no, comparamos COMANDO con otro posible comando
 buclequit:
 	mov ah, COMANDO[bx]
-	cmp ah, 0DH				
+	cmp ah, CR			
 	jz checkquit			;Si es retorno de carro, hay que comprobar que la otra string tambien ha acabado
 	cmp QUIT[bx-2], ah		;Si no, comparamos los caracteres de las dos cadenas
 	jnz fincheck			;Si no son iguales, no es el comando quit
 	inc bx
 	jmp buclequit			;Si son iguales seguimos comprobando
 checkquit:
-	cmp QUIT[bx-2], '$'	
+	cmp QUIT[bx-2], WATCH	
 	jz resquit				;Si la otra string tambien ha terminado, marcaremos que el comando es quit
 	jmp fincheck
 rescod:
